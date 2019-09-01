@@ -1,0 +1,13 @@
+body,html{
+    background-color: black;
+    color: whitesmoke;
+    position: absolute;
+    left: 17%;
+}
+#reset {
+    position: absolute;
+    left: 45%;
+    bottom: -45px;
+    z-index: 999
+}
+audio {display:none;}

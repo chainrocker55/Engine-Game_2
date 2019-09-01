@@ -1,0 +1,286 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rocket Game</title>
+    <script type="text/javascript" src="simpleGame.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript">
+        var scene;
+        var bg;
+        var rocket;
+        var rocks;
+        var NUM_Rock = 2;
+        var missile;
+        var bomb;
+        var coins = 0;
+        var distance = 0;
+        var power = 100
+        var distance = 0
+        var timer;
+        var coin;
+        var gunshutSound;
+        var bombSound;
+        var beepSound
+
+        function Background() {
+            tsky = new Sprite(scene, "galaxy.png", 1280, 6000);
+            tsky.setDX(0);
+            tsky.setDY(10);
+            tsky.setPosition(530, 0);
+
+            tsky.checkBounds = function () {
+                //seamless ocean gif repeats
+                if (this.y > 3000) {
+                    this.setPosition(530, 0)
+                } // end if
+            } // end checkBounds
+
+
+            return tsky;
+        } // end ocean
+
+        function checkCollision() {
+            //rocket collision coin
+            if (rocket.distanceTo(coin) < 85) {
+                beepSound.play()
+                coins += 100
+                coin.reset();
+            } // end if
+            //rocket collision rock
+            for (i = 0; i < NUM_Rock; i++) {
+                if (rocket.distanceTo(rocks[i]) < 100) {
+                    bombSound.play()
+                    bomb.fire(i)
+
+                    rocks[i].reset();
+                    setTimeout(function () {
+                        bomb.reset()
+                    }, 800);
+                    power -= 20
+
+                } // end if
+
+                if (missile.distanceTo(rocks[i]) < 60) {
+                    bombSound.play()
+                    bomb.fire(i)
+                   
+
+                    rocks[i].reset();
+                    setTimeout(function () {
+                        bomb.reset()
+                    }, 800);
+
+                } // end if
+            } // end for
+        } // end checkCollisions
+        function Rock() {
+            tRock = new Sprite(scene, "rock.png", 70, 70);
+            tRock.setAngle(180);
+            tRock.setSpeed(0)
+            tRock.reset = function () {
+                this.setDX(0);
+                newX = Math.random() * scene.width;
+                newY = Math.random() * -300;
+                this.setPosition(newX, newY);
+                // this.turnBy(20)
+
+            } // end reset
+
+            tRock.checkBounds = function () {
+                if (this.y > scene.height) {
+                    this.reset();
+                } // end if
+            } // end checkBounds
+
+            tRock.reset();
+
+            return tRock;
+        } // end cloud 
+        function Coin() {
+            tCoin = new Sprite(scene, "coin.png", 55, 60);
+            tCoin.setAngle(180);
+            tCoin.setSpeed(0)
+            tCoin.reset = function () {
+                this.setDX(0);
+                newX = Math.random() * scene.width;
+                newY = Math.random() * -scene.height;
+                this.setPosition(newX, newY);
+                // this.turnBy(20)
+
+            } // end reset
+
+            tCoin.checkBounds = function () {
+                if (this.y > scene.height) {
+                    this.reset();
+                } // end if
+            } // end checkBounds
+
+            tCoin.reset();
+
+            return tCoin;
+        } // end cloud 
+        function makeRocks() {
+            rocks = new Array(NUM_Rock);
+            for (i = 0; i < NUM_Rock; i++) {
+                rocks[i] = new Rock();
+            } // end for
+        } // end makeClouds
+
+        function updateRocks() {
+            for (i = 0; i < NUM_Rock; i++) {             
+                rocks[i].update();
+                rocks[i].turnBy(15)
+                rocks[i].setDY(15);
+                rocks[i].checkBounds()
+            } // end for
+
+        } // end updateClouds
+        function updateCoins() {
+            coin.update();
+            coin.turnBy(15)
+            coin.setDY(10);
+            coin.checkBounds()
+        } // end updateClouds
+
+        function Missile() {
+            tMissile = new Sprite(scene, "missile.png", 50, 30)
+            tMissile.setSpeed(0)
+            tMissile.hide()
+            tMissile.fire = function () {
+
+                this.show()
+                this.setPosition(rocket.x, rocket.y)
+                this.setAngle(rocket.getImgAngle() - 90)
+                this.setSpeed(30)
+                this.setBoundAction(DIE)
+            }
+            return tMissile
+        }
+
+        function Bomb() {
+            tBomb = new Sprite(scene, "bomb.png", 100, 100)
+            tBomb.setSpeed(0)
+            tBomb.hide()
+            tBomb.fire = function (i) {
+                this.show()
+                this.setPosition(rocks[i].x, rocks[i].y)
+            }
+            tBomb.reset = function (i) {
+                this.hide()
+                this.setPosition(rocket.x, rocket.y)
+            }
+            return tBomb
+        }
+
+        function checkKey() {
+            if (keysDown[K_LEFT]) {
+                rocket.setCurrentCycle('move')
+                rocket.setAngle(70)
+                rocket.setSpeed(10)
+                rocket.setMoveAngle(270)
+            } else if (keysDown[K_RIGHT]) {
+                rocket.setCurrentCycle('move')
+
+                rocket.setSpeed(10)
+                rocket.setAngle(120)
+                rocket.setMoveAngle(90)
+            } else if (keysDown[K_SPACE]) {
+                gunshutSound.play()
+                missile.fire()
+            } else {
+                // console.log(rocket.getCurrentCycle())
+                if (rocket.getCurrentCycle() != 'up') {
+                    rocket.setCurrentCycle('up')
+                    rocket.setAngle(90)
+                    rocket.setSpeed(0)
+                }
+            }
+        }
+        buildSounds = function () {
+            bombSound = new Sound("bomb.mp3");
+            gunshutSound = new Sound("gunshut.mp3");
+            beepSound = new Sound("beep.mp3");
+
+        } // end buildSounds
+
+
+        function init() {
+            scene = new Scene();
+            scene.hideCursor();
+            bg = new Background()
+            missile = new Missile()
+            bomb = new Bomb()
+            timer = new Timer()
+            coin = new Coin()
+            rocket = new Sprite(scene, "rocket.png", 384, 312)
+            rocket.loadAnimation(384, 312, 96, 156)
+            rocket.generateAnimationCycles();
+            rocket.renameCycles(new Array('up', 'move'))
+            rocket.setAnimationSpeed(500);
+            rocket.setPosition(440, 530)
+            rocket.setSpeed(0)
+            // rocket.pauseAnimation(0)
+            buildSounds()
+            makeRocks()
+        
+            scene.start();
+        } // end init
+
+        function update() {
+            scene.clear()
+            checkKey()
+            checkCollision()
+
+            bg.update()
+            rocket.update()
+            missile.update()
+            bomb.update()
+            updateCoins()
+            updateRocks()
+            updateScore()
+
+
+        } // end update
+        function restart() {
+            document.location.href = "";
+        }
+
+        function updateScore() {
+            distance = timer.getElapsedTime() * 5
+            document.getElementById('coin').innerHTML = 'Coins : ' + coins
+            document.getElementById('power').value = power
+            document.getElementById('distance').innerHTML = 'Distance : ' + distance.toFixed(3) + " mile"
+            if (power == 0) {
+                scene.stop()
+            }
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <div style="width: 1000px" class="row">
+        <div class="col">
+            <h3 id="distance" style="margin-left: 5px"> Distance : </h3>
+        </div>
+        <div class="col">
+            <h3 id="coin"> Coins : </h3>
+        </div>
+        <div class="col">
+            <progress id="power"
+                style="width:300px;height: 25px;margin-top: 10px;border: 1px solid black;background-color: rgb(1, 207, 1);"
+                value="100" max="100"></progress>
+        </div>
+    </div>
+    <div id="reset">
+        <button type="button" onclick="restart()">
+            Play again
+        </button>
+    </div>
+
+
+</body>
+</html>
